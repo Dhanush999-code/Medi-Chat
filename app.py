@@ -5,10 +5,16 @@ import google.generativeai as genai
 app=Flask(__name__)
 
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-GEMINI_API_KEY = "GEMINI_API_KEY"
+
 from PIL import Image
 import io
 import base64
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+
+if not GEMINI_API_KEY:
+    raise ValueError("GEMINI_API_KEY environment variable not found")
+
+genai.configure(api_key=GEMINI_API_KEY)
 genai.configure(api_key=GEMINI_API_KEY)
 
 model = genai.GenerativeModel("gemini-2.5-flash")

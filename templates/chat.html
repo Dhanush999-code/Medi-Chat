@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<div class="ai-online"></div>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Medi-Chat | AI Medical Assistant</title>
+  <link rel="stylesheet" href="/static/css/chat.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+</head>
+<body>
+  <!-- SIDEBAR -->
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="logo">
+        <i class="fa fa-comment-medical"></i>
+        <span>Medi<b>Chat</b></span>
+      </div>
+      <button class="sidebar-close" onclick="toggleSidebar()"><i class="fa fa-times"></i></button>
+    </div>
+
+    <div class="user-card">
+      <div class="avatar">{{ user.name[0] | upper }}</div>
+      <div>
+        <div class="uname">{{ user.name }}</div>
+        <div class="uemail">{{ user.email }}</div>
+      </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="sidebar-nav">
+      <a class="nav-item active" onclick="showPanel('chat')">
+        <i class="fa fa-comment-dots"></i> AI Chat
+      </a>
+      <a class="nav-item" onclick="showPanel('medicine')">
+        <i class="fa fa-pills"></i> Medicine Analyzer
+      </a>
+      <a class="nav-item" onclick="showPanel('bill')">
+        <i class="fa fa-receipt"></i> Bill Verification
+      </a>
+      <a class="nav-item" onclick="showPanel('complaint')">
+        <i class="fa fa-file-alt"></i> File Complaint
+      </a>
+      <a class="nav-item" onclick="showPanel('history')">
+        <i class="fa fa-history"></i> Chat History
+      </a>
+      <a class="nav-item" onclick="showPanel('profile')">
+        <i class="fa fa-user-circle"></i> My Profile
+      </a>
+      <a class="nav-item" onclick="showPanel('emergency')">
+        <i class="fa fa-ambulance"></i> Emergency
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <a href="/logout" class="logout-btn"><i class="fa fa-sign-out-alt"></i> Logout</a>
+    </div>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div class="main" id="main">
+    <!-- Top Bar -->
+    <div class="topbar">
+      <button class="menu-btn" onclick="toggleSidebar()"><i class="fa fa-bars"></i></button>
+      <div class="topbar-title" id="topbar-title">
+        <i class="fa fa-comment-dots"></i> AI Medical Assistant
+      </div>
+      <div class="topbar-right">
+        <div class="health-tip-badge" id="tip-badge">
+          <i class="fa fa-lightbulb"></i> <span id="tip-text">Loading tip...</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── CHAT PANEL ── -->
+    <div class="panel active" id="panel-chat">
+      <div class="chat-area" id="chat-area">
+        <div class="welcome-msg">
+          <div class="welcome-icon"><i class="fa fa-robot"></i></div>
+          <h2>Hello, {{ user.name }}! 👋</h2>
+          <p>I'm your AI medical assistant. Ask me about medications, symptoms, health tips, or upload a medicine image for analysis.</p>
+          <div class="quick-prompts">
+            <button onclick="quickPrompt('What are the side effects of Paracetamol?')">💊 Side effects of Paracetamol</button>
+            <button onclick="quickPrompt('What is the correct dosage of Amoxicillin for adults?')">💉 Amoxicillin dosage</button>
+            <button onclick="quickPrompt('Give me tips to manage diabetes daily')">🩺 Diabetes management tips</button>
+            <button onclick="quickPrompt('What medicines interact with blood thinners?')">⚠️ Drug interactions</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="chat-input-bar">
+        <div class="image-preview-wrap" id="img-preview-wrap" style="display:none">
+          <img id="img-preview" src="" alt="preview"/>
+          <button onclick="clearImage()"><i class="fa fa-times"></i></button>
+        </div>
+        <div class="input-row">
+          <label class="attach-btn" for="file-input" title="Attach image">
+            <i class="fa fa-paperclip"></i>
+          </label>
+          <input type="file" id="file-input" accept="image/*" onchange="previewImage(event)" hidden/>
+          <textarea id="user-input" placeholder="Ask about medications, symptoms, dosage..." rows="1"
+            onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+          <button class="send-btn" onclick="sendMessage()"><i class="fa fa-paper-plane"></i></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── MEDICINE ANALYZER PANEL ── -->
+    <div class="panel" id="panel-medicine">
+      <div class="panel-content">
+        <div class="panel-header">
+          <i class="fa fa-pills"></i>
+          <h2>Medicine Analyzer</h2>
+          <p>Upload an image of any tablet, capsule, or medicine package to get detailed information.</p>
+        </div>
+        <div class="upload-zone" id="med-upload-zone"
+          onclick="document.getElementById('med-file').click()"
+          ondragover="event.preventDefault()" ondrop="handleMedDrop(event)">
+          <i class="fa fa-cloud-upload-alt"></i>
+          <p>Click or drag & drop medicine image here</p>
+          <span>Supports: JPG, PNG, GIF</span>
+        </div>
+        <input type="file" id="med-file" accept="image/*" hidden onchange="previewMedImage(event)"/>
+        <div id="med-preview-container" style="display:none">
+          <img id="med-preview" src="" alt="Medicine"/>
+          <button class="btn-primary" onclick="analyzeMedicine()">
+            <i class="fa fa-search"></i> Analyze Medicine
+          </button>
+          <button class="btn-secondary" onclick="clearMedImage()">
+            <i class="fa fa-redo"></i> Clear
+          </button>
+        </div>
+        <div id="med-result" class="result-box" style="display:none"></div>
+      </div>
+    </div>
+
+    <!-- ── BILL VERIFICATION PANEL ── -->
+    <div class="panel" id="panel-bill">
+      <div class="panel-content">
+        <div class="panel-header">
+          <i class="fa fa-receipt"></i>
+          <h2>Medical Bill Verification</h2>
+          <p>Upload your medical bill or enter the details to check if prices are fair in your area.</p>
+        </div>
+        <div class="location-bar">
+          <i class="fa fa-map-marker-alt"></i>
+          <span id="user-location">Detecting location...</span>
+          <button onclick="getLocation()"><i class="fa fa-crosshairs"></i> Detect</button>
+        </div>
+        <div class="bill-options">
+          <button class="tab-btn active" onclick="billTab('text', this)">Enter Bill Details</button>
+          <button class="tab-btn" onclick="billTab('image', this)">Upload Bill Image</button>
+        </div>
+        <div id="bill-text-input">
+          <textarea id="bill-text" placeholder="Enter medicine names and prices:
+Example:
+Paracetamol 500mg x 10 - ₹45
+Amoxicillin 250mg x 6 - ₹120
+Vitamin D3 - ₹350" rows="8"></textarea>
+        </div>
+        <div id="bill-image-input" style="display:none">
+          <div class="upload-zone" onclick="document.getElementById('bill-file').click()">
+            <i class="fa fa-file-image"></i>
+            <p>Upload Bill Image</p>
+          </div>
+          <input type="file" id="bill-file" accept="image/*" hidden onchange="previewBillImage(event)"/>
+          <img id="bill-img-preview" style="display:none;max-width:100%;border-radius:8px;margin-top:10px"/>
+        </div>
+        <button class="btn-primary" onclick="verifyBill()">
+          <i class="fa fa-search-dollar"></i> Verify Bill Prices
+        </button>
+        <div id="bill-result" class="result-box" style="display:none"></div>
+      </div>
+    </div>
+
+    <!-- ── COMPLAINT PANEL ── -->
+    <div class="panel" id="panel-complaint">
+      <div class="panel-content">
+        <div class="panel-header">
+          <i class="fa fa-file-alt"></i>
+          <h2>File a Complaint</h2>
+          <p>Report malpractice, overcharging, or misconduct by a doctor or hospital.</p>
+        </div>
+        <div class="complaint-tabs">
+          <button class="tab-btn active" onclick="compTab('new', this)">New Complaint</button>
+          <button class="tab-btn" onclick="compTab('view', this)">My Complaints</button>
+        </div>
+        <div id="new-complaint">
+          <div class="form-grid">
+            <div class="form-group">
+              <label><i class="fa fa-user-md"></i> Doctor's Name</label>
+              <input type="text" id="c-doctor" placeholder="Dr. Name (optional)"/>
+            </div>
+            <div class="form-group">
+              <label><i class="fa fa-hospital"></i> Hospital / Clinic</label>
+              <input type="text" id="c-hospital" placeholder="Hospital or clinic name"/>
+            </div>
+            <div class="form-group">
+              <label><i class="fa fa-tag"></i> Category</label>
+              <select id="c-category">
+                <option value="">Select category</option>
+                <option>Medical Negligence</option>
+                <option>Overcharging / Billing Fraud</option>
+                <option>Wrong Diagnosis</option>
+                <option>Wrong Medication</option>
+                <option>Unprofessional Behavior</option>
+                <option>Denial of Treatment</option>
+                <option>Other</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label><i class="fa fa-calendar"></i> Date of Incident</label>
+              <input type="date" id="c-date"/>
+            </div>
+          </div>
+          <div class="form-group">
+            <label><i class="fa fa-align-left"></i> Description</label>
+            <textarea id="c-desc" rows="5" placeholder="Describe the incident in detail..."></textarea>
+          </div>
+          <button class="btn-primary" onclick="fileComplaint()">
+            <i class="fa fa-paper-plane"></i> Submit Complaint
+          </button>
+          <div id="comp-msg" class="result-box" style="display:none"></div>
+        </div>
+        <div id="view-complaints" style="display:none">
+          <div id="complaints-list"><p class="loading">Loading...</p></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── HISTORY PANEL ── -->
+    <div class="panel" id="panel-history">
+      <div class="panel-content">
+        <div class="panel-header">
+          <i class="fa fa-history"></i>
+          <h2>Chat History</h2>
+          <p>Your last 20 conversations with Medi-Chat.</p>
+        </div>
+        <div id="history-list"><p class="loading">Loading history...</p></div>
+      </div>
+    </div>
+
+    <!-- ── PROFILE PANEL ── -->
+    <div class="panel" id="panel-profile">
+      <div class="panel-content">
+        <div class="panel-header">
+          <i class="fa fa-user-circle"></i>
+          <h2>My Health Profile</h2>
+          <p>Update your health information for better assistance.</p>
+        </div>
+        <div class="profile-avatar">{{ user.name[0] | upper }}</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Full Name</label>
+            <input type="text" id="p-name" value="{{ user.name }}"/>
+          </div>
+          <div class="form-group">
+            <label>Age</label>
+            <input type="number" id="p-age" value="{{ user.age or '' }}"/>
+          </div>
+          <div class="form-group">
+            <label>Gender</label>
+            <select id="p-gender">
+              <option {% if user.gender == 'Male' %}selected{% endif %}>Male</option>
+              <option {% if user.gender == 'Female' %}selected{% endif %}>Female</option>
+              <option {% if user.gender == 'Other' %}selected{% endif %}>Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Blood Group</label>
+            <select id="p-blood">
+              {% for bg in ['A+','A-','B+','B-','O+','O-','AB+','AB-'] %}
+              <option {% if user.blood_group == bg %}selected{% endif %}>{{ bg }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label><i class="fa fa-allergies"></i> Known Allergies</label>
+          <textarea id="p-allergies" rows="2" placeholder="e.g. Penicillin, Aspirin, Peanuts">{{ user.allergies or '' }}</textarea>
+        </div>
+        <div class="form-group">
+          <label><i class="fa fa-heartbeat"></i> Chronic Conditions</label>
+          <textarea id="p-conditions" rows="2" placeholder="e.g. Diabetes, Hypertension, Asthma">{{ user.chronic_conditions or '' }}</textarea>
+        </div>
+        <button class="btn-primary" onclick="saveProfile()">
+          <i class="fa fa-save"></i> Save Profile
+        </button>
+        <div id="profile-msg" class="result-box" style="display:none"></div>
+      </div>
+    </div>
+
+    <!-- ── EMERGENCY PANEL ── -->
+    <div class="panel" id="panel-emergency">
+      <div class="panel-content">
+        <div class="panel-header">
+          <i class="fa fa-ambulance"></i>
+          <h2>Emergency Contacts & Info</h2>
+          <p>Important emergency numbers and first-aid guidance.</p>
+        </div>
+        <div class="emergency-grid">
+          <div class="emergency-card red">
+            <i class="fa fa-ambulance"></i>
+            <h3>Ambulance</h3>
+            <a href="tel:108">108</a>
+          </div>
+          <div class="emergency-card blue">
+            <i class="fa fa-fire-extinguisher"></i>
+            <h3>Fire Brigade</h3>
+            <a href="tel:101">101</a>
+          </div>
+          <div class="emergency-card green">
+            <i class="fa fa-shield-alt"></i>
+            <h3>Police</h3>
+            <a href="tel:100">100</a>
+          </div>
+          <div class="emergency-card orange">
+            <i class="fa fa-phone"></i>
+            <h3>Women Helpline</h3>
+            <a href="tel:1091">1091</a>
+          </div>
+          <div class="emergency-card purple">
+            <i class="fa fa-child"></i>
+            <h3>Child Helpline</h3>
+            <a href="tel:1098">1098</a>
+          </div>
+          <div class="emergency-card teal">
+            <i class="fa fa-brain"></i>
+            <h3>Mental Health</h3>
+            <a href="tel:iCall">iCall: 9152987821</a>
+          </div>
+        </div>
+        <div class="firstaid-section">
+          <h3><i class="fa fa-first-aid"></i> Quick First Aid</h3>
+          <div class="firstaid-grid">
+            <div class="fa-card" onclick="showFirstAid('choking')">
+              <i class="fa fa-procedures"></i><span>Choking</span>
+            </div>
+            <div class="fa-card" onclick="showFirstAid('cpr')">
+              <i class="fa fa-heartbeat"></i><span>CPR</span>
+            </div>
+            <div class="fa-card" onclick="showFirstAid('burn')">
+              <i class="fa fa-fire"></i><span>Burns</span>
+            </div>
+            <div class="fa-card" onclick="showFirstAid('bleeding')">
+              <i class="fa fa-tint"></i><span>Bleeding</span>
+            </div>
+          </div>
+          <div id="firstaid-result" class="result-box" style="display:none"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/js/chat.js"></script>
+</body>
+</html>
